@@ -35,23 +35,68 @@ const url = require('url')
 
 ////////////////////////////////
 // SERVER
+
+const replaceTemplate = (temp, product) => {
+    // console.log("temp", temp);
+    let output = temp.replace('{%PRODUCTNAME%}', product.productName)
+    // output = output.replace('{%PRODUCTNAME%}', product.productName)
+    output = output.replace(/{%IMAGE%}/g, product.image)
+    output = output.replace(/{%PRICE%}/g, product.price)
+    output = output.replace(/{%FROM%}/g, product.from)
+    output = output.replace(/{%NUTRIENTS%}/g, product.nutrients)
+    output = output.replace(/{%QUANTITY%}/g, product.quantity)
+    output = output.replace(/{%DISCRIPTION%}/g, product.discription)
+    output = output.replace(/{%ID%}/g, product.id)
+
+    // console.log("output", output);
+    if (!product.organic) output = output.replace(/{%NOT_ORGANIC%}/g, 'not-organic')
+    return output
+}
+
+
+const tempOverview = fs.readFileSync(`${__dirname}/templates/template-overview.html`, 'utf-8');
+const tempCard = fs.readFileSync(`${__dirname}/templates/template-card.html`, 'utf-8');
+const tempProduct = fs.readFileSync(`${__dirname}/templates/template-product.html`, 'utf-8');
+
+// console.log("temp card", tempCard);
 const data = fs.readFileSync(`${__dirname}/dev-data/data.json`, 'utf-8');
 const dataObject = JSON.parse(data);
 
+
+
+
 const server = http.createServer((req, res) => {
-    console.log(req.url);
+    // console.log(req.url);
     const pathName = req.url;
+
+
+    // Overview Page
     if (pathName === '/' || pathName === '/overview') {
-        res.end('This is the OVERVIEW!')
+        res.writeHead(200, {
+            'Content-type': 'text/html'
+        })
+
+        const cardsHtml = dataObject.map(el => replaceTemplate(tempCard, el)).join('')
+        // console.log(cardsHtml);
+        const output = tempOverview.replace('{%PRODUCT_CARD%}', cardsHtml)
+        res.end(output)
     }
+
+    //Product page
     else if (pathName === '/product') {
         res.end('This is the PRODUCT!')
-    } else if (pathName === '/api') {
+    }
+
+    // api page
+    else if (pathName === '/api') {
         res.writeHead(200, {
             'Content-type': 'application/json'
         })
         res.end(data);
-    } else {
+    }
+
+    //Not found page
+    else {
         res.writeHead(404, {
             'Content-type': 'text/html',
             'my-own-header': 'hello WOrld'
