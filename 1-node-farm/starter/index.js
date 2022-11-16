@@ -38,14 +38,14 @@ const url = require('url')
 
 const replaceTemplate = (temp, product) => {
     // console.log("temp", temp);
-    let output = temp.replace('{%PRODUCTNAME%}', product.productName)
+    let output = temp.replace(/{%PRODUCTNAME%}/g, product.productName)
     // output = output.replace('{%PRODUCTNAME%}', product.productName)
     output = output.replace(/{%IMAGE%}/g, product.image)
     output = output.replace(/{%PRICE%}/g, product.price)
     output = output.replace(/{%FROM%}/g, product.from)
     output = output.replace(/{%NUTRIENTS%}/g, product.nutrients)
     output = output.replace(/{%QUANTITY%}/g, product.quantity)
-    output = output.replace(/{%DISCRIPTION%}/g, product.discription)
+    output = output.replace(/{%DESCRIPTION%}/g, product.description)
     output = output.replace(/{%ID%}/g, product.id)
 
     // console.log("output", output);
@@ -66,12 +66,13 @@ const dataObject = JSON.parse(data);
 
 
 const server = http.createServer((req, res) => {
-    // console.log(req.url);
-    const pathName = req.url;
 
+    const { query, pathname } = url.parse(req.url, true)
+    // console.log("pathname", pathname);
+    // const pathname = req.url;
 
     // Overview Page
-    if (pathName === '/' || pathName === '/overview') {
+    if (pathname === '/' || pathname === '/overview') {
         res.writeHead(200, {
             'Content-type': 'text/html'
         })
@@ -83,12 +84,18 @@ const server = http.createServer((req, res) => {
     }
 
     //Product page
-    else if (pathName === '/product') {
-        res.end('This is the PRODUCT!')
+    else if (pathname === '/product') {
+        res.writeHead(200, {
+            'Content-type': 'text/html'
+        })
+
+        const product = dataObject[query.id]
+        const output = replaceTemplate(tempProduct, product)
+        res.end(output)
     }
 
     // api page
-    else if (pathName === '/api') {
+    else if (pathname === '/api') {
         res.writeHead(200, {
             'Content-type': 'application/json'
         })
