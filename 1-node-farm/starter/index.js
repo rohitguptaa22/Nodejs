@@ -1,8 +1,9 @@
 const fs = require('fs');
-const http = require('http')
-const url = require('url')
+const http = require('http');
+const url = require('url');
+const slugify = require('slugify');
 
-const replaceTemplate = require('./modules/replaceTemplate')
+const replaceTemplate = require('./modules/replaceTemplate');
 
 ////////////////////////////////
 // FILES
@@ -34,11 +35,8 @@ const replaceTemplate = require('./modules/replaceTemplate')
 // })
 // console.log('Will Read FIle..')
 
-
 ////////////////////////////////
 // SERVER
-
-
 
 const tempOverview = fs.readFileSync(`${__dirname}/templates/template-overview.html`, 'utf-8');
 const tempCard = fs.readFileSync(`${__dirname}/templates/template-card.html`, 'utf-8');
@@ -48,57 +46,52 @@ const tempProduct = fs.readFileSync(`${__dirname}/templates/template-product.htm
 const data = fs.readFileSync(`${__dirname}/dev-data/data.json`, 'utf-8');
 const dataObject = JSON.parse(data);
 
-
-
+const slugs = dataObject.map((el) => slugify(el.productName, { lower: true }));
+console.log(slugs);
 
 const server = http.createServer((req, res) => {
+  const { query, pathname } = url.parse(req.url, true);
+  // Overview Page
+  if (pathname === '/' || pathname === '/overview') {
+    res.writeHead(200, {
+      'Content-type': 'text/html',
+    });
 
-    const { query, pathname } = url.parse(req.url, true)
-    // console.log("pathname", pathname);
-    // const pathname = req.url;
+    const cardsHtml = dataObject.map((el) => replaceTemplate(tempCard, el)).join('');
 
-    // Overview Page
-    if (pathname === '/' || pathname === '/overview') {
-        res.writeHead(200, {
-            'Content-type': 'text/html'
-        })
+    const output = tempOverview.replace('{%PRODUCT_CARD%}', cardsHtml);
+    res.end(output);
+  }
 
-        const cardsHtml = dataObject.map(el => replaceTemplate(tempCard, el)).join('')
-        // console.log(cardsHtml);
-        const output = tempOverview.replace('{%PRODUCT_CARD%}', cardsHtml)
-        res.end(output)
-    }
+  //Product page
+  else if (pathname === '/product') {
+    res.writeHead(200, {
+      'Content-type': 'text/html',
+    });
 
-    //Product page
-    else if (pathname === '/product') {
-        res.writeHead(200, {
-            'Content-type': 'text/html'
-        })
+    const product = dataObject[query.id];
+    const output = replaceTemplate(tempProduct, product);
+    res.end(output);
+  }
 
-        const product = dataObject[query.id]
-        const output = replaceTemplate(tempProduct, product)
-        res.end(output)
-    }
+  // api page
+  else if (pathname === '/api') {
+    res.writeHead(200, {
+      'Content-type': 'application/json',
+    });
+    res.end(data);
+  }
 
-    // api page
-    else if (pathname === '/api') {
-        res.writeHead(200, {
-            'Content-type': 'application/json'
-        })
-        res.end(data);
-    }
-
-    //Not found page
-    else {
-        res.writeHead(404, {
-            'Content-type': 'text/html',
-            'my-own-header': 'hello WOrld'
-        })
-        res.end('<h1>Page Not found</h1>')
-    }
-
-})
+  //Not found page
+  else {
+    res.writeHead(404, {
+      'Content-type': 'text/html',
+      'my-own-header': 'hello WOrld',
+    });
+    res.end('<h1>Page Not found</h1>');
+  }
+});
 
 server.listen(8000, '127.0.0.1', () => {
-    console.log('Listening to requests on port 8000!');
-})
+  console.log('Listening to requests on port 8000!');
+});
